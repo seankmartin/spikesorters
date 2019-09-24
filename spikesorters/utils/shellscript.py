@@ -4,11 +4,16 @@ import shutil
 import signal
 import os
 import time
+import sys
 from typing import Optional, List, Any
 
 
 class ShellScript():
     def __init__(self, script: str, script_path: Optional[str]=None, keep_temp_files: bool=False):
+        """
+        Note: script_path should 'not' contain any name suffix, suffixes will be automatically added
+              based on platform.
+        """
         lines = script.splitlines()
         lines = self._remove_initial_blank_lines(lines)
         if len(lines) > 0:
@@ -21,6 +26,8 @@ class ShellScript():
                         raise Exception('Problem in script. First line must not be indented relative to others')
                     lines[ii] = lines[ii][num_initial_spaces:]
         self._script = '\n'.join(lines)
+        if script_path is not None and ('.sh' in script_path or '.bat' in script_path):
+                raise Exception('Suffix in initialised script path, please remove and try again.')
         self._script_path = script_path
         self._keep_temp_files = keep_temp_files
         self._process: Optional[subprocess.Popen] = None
@@ -37,8 +44,18 @@ class ShellScript():
     def write(self, script_path: Optional[str]=None) -> None:
         if script_path is None:
             script_path = self._script_path
+ 
         if script_path is None:
             raise Exception('Cannot write script. No path specified')
+
+        if '.sh' in script_path or '.bat' in script_path:
+            raise Exception('Suffix in script path, please remove and try again.')
+
+        if 'win' in sys.platform:
+            script_path += '.bat'
+        else:
+            script_path += '.sh'
+        
         with open(script_path, 'w') as f:
             f.write(self._script)
         os.chmod(script_path, 0o744)
@@ -48,9 +65,20 @@ class ShellScript():
             script_path = self._script_path
         else:
             tempdir = tempfile.mkdtemp(prefix='tmp_shellscript')
-            script_path = os.path.join(tempdir, 'script.sh')
+            if 'win' in sys.platform:
+                script_path = os.path.join(tempdir, 'script.bat')
+            else:
+                script_path = os.path.join(tempdir, 'script.sh')
             self._dirs_to_remove.append(tempdir)
+        
         self.write(script_path)
+        
+        # Validity of script_path has already been checked by write() function
+        if 'win' in sys.platform:
+            script_path += '.bat'
+        else:
+            script_path += '.sh'
+        
         cmd = script_path
         print('RUNNING SHELL SCRIPT: ' + cmd)
         self._start_time = time.time()
