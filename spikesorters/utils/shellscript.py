@@ -6,7 +6,7 @@ import os
 import time
 import sys
 from typing import Optional, List, Any
-
+from pathlib import Path
 
 class ShellScript():
     def __init__(self, script: str, script_path: Optional[str]=None, keep_temp_files: bool=False):
@@ -26,8 +26,6 @@ class ShellScript():
                         raise Exception('Problem in script. First line must not be indented relative to others')
                     lines[ii] = lines[ii][num_initial_spaces:]
         self._script = '\n'.join(lines)
-        if script_path is not None and ('.sh' in script_path or '.bat' in script_path):
-                raise Exception('Suffix in initialised script path, please remove and try again.')
         self._script_path = script_path
         self._keep_temp_files = keep_temp_files
         self._process: Optional[subprocess.Popen] = None
@@ -47,14 +45,11 @@ class ShellScript():
  
         if script_path is None:
             raise Exception('Cannot write script. No path specified')
-
-        if '.sh' in script_path or '.bat' in script_path:
-            raise Exception('Suffix in script path, please remove and try again.')
-
-        if 'win' in sys.platform:
-            script_path += '.bat'
-        else:
-            script_path += '.sh'
+        if len(Path(script_path).suffix) == 0:
+            if 'win' in sys.platform:
+                script_path += '.bat'
+            else:
+                script_path += '.sh'
         
         with open(script_path, 'w') as f:
             f.write(self._script)
@@ -72,14 +67,14 @@ class ShellScript():
             self._dirs_to_remove.append(tempdir)
         
         self.write(script_path)
-        
-        # Validity of script_path has already been checked by write() function
-        if 'win' in sys.platform:
-            script_path += '.bat'
-        else:
-            script_path += '.sh'
-        
+
+        if len(Path(script_path).suffix) == 0:
+            if 'win' in sys.platform:
+                script_path += '.bat'
+            else:
+                script_path += '.sh'
         cmd = script_path
+
         print('RUNNING SHELL SCRIPT: ' + cmd)
         self._start_time = time.time()
         self._process = subprocess.Popen(cmd)
@@ -104,9 +99,7 @@ class ShellScript():
         if not self.isRunning():
             return
         assert self._process is not None, "Unexpected self._process is None even though it is running."
-
         signals = [signal.SIGINT] * 10 + [signal.SIGTERM] * 10 + [signal.SIGKILL] * 10
-
         for signal0 in signals:
             self._process.send_signal(signal0)
             try:
