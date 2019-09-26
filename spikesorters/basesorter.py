@@ -76,7 +76,7 @@ class BaseSorter:
         for output_folder in self.output_folders:
             if not output_folder.is_dir():
                 os.makedirs(str(output_folder))
-            elif 'win' in sys.platform:
+            elif 'win' in sys.platform and self.sorter_name in self.win_known_problematic_sorters:
                 raise ValueError(output_folder.as_posix() + ' exists and it would cause error '
                                     'on Windows, please remove it first or manually specify \'output_folder\'.')
 
