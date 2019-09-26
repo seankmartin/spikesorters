@@ -88,7 +88,7 @@ def run_sorters(sorter_list, recording_dict_or_list,  working_folder, sorter_par
             * 'multiprocessing' : {'processes' : } number of processes
             
     verbose: bool
-        default True
+        default False
 
     with_output: bool
         return the output.

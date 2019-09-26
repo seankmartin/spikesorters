@@ -23,6 +23,7 @@ from pathlib import Path
 import threading
 import shutil
 import os
+import sys
 import spikeextractors as se
 
 
@@ -39,6 +40,9 @@ class BaseSorter:
         {'name': 'delete_output_folder', 'type': 'bool', 'value':False, 'default':False, 'title': "If True, delete the results of the sorter, otherwise, it won't.", 'base_param':True},
     ]
     installation_mesg = ""  # error message when not installed
+    win_known_problematic_sorters = [
+        'tridesclous', 'herdingspikes'
+    ]
 
     def __init__(self, recording=None, output_folder=None, verbose=False,
                  grouping_property=None, parallel=False, delete_output_folder=False):
@@ -72,6 +76,10 @@ class BaseSorter:
         for output_folder in self.output_folders:
             if not output_folder.is_dir():
                 os.makedirs(str(output_folder))
+            elif 'win' in sys.platform:
+                raise ValueError(output_folder.as_posix() + ' exists and it would cause error '
+                                    'on Windows, please remove it first or manually specify \'output_folder\'.')
+
         self.delete_folders = delete_output_folder
 
     @classmethod
