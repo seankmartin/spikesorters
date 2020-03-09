@@ -1,6 +1,7 @@
 import copy
 from pathlib import Path
 import sys
+from os.path import isfile
 
 import spikeextractors as se
 
@@ -99,7 +100,11 @@ class KlustaSorter(BaseSorter):
             # save binary file (chunk by hcunk) into a new file
             raw_filename = output_folder / 'recording.dat'
             dtype = 'int16'
-            recording.write_to_binary_dat_format(raw_filename, time_axis=0, dtype=dtype, chunk_mb=500)
+            # Don't write the file if it already exists
+            if not isfile(raw_filename):
+                recording.write_to_binary_dat_format(raw_filename, time_axis=0, dtype=dtype, chunk_mb=500)
+            else:
+                print("{} already exists, using that".format(raw_filename))
 
         if p['detect_sign'] < 0:
             detect_sign = 'negative'
